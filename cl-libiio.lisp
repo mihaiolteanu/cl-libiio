@@ -114,3 +114,10 @@
 (defun channel-attributes (channel)
   (loop for i from 0 to (1- (iio-channel-get-attrs-count channel))
         collect (iio-channel-get-attr channel i)))
+
+(defun channel-attributes-and-values (channel)
+  "Return a list of all attributes together with their values for the given channel."
+  (let ((attributes (channel-attributes channel)))
+    (mapcar (lambda (attr)
+              (list attr (iio-channel-attr-read channel attr)))
+            attributes)))
