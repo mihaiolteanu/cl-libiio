@@ -6,23 +6,68 @@
   (t (:default "libiio")))
 (use-foreign-library libiio)
 
-(defcfun "iio_create_context_from_uri" :pointer (ip :string))
-(defcfun "iio_context_get_devices_count" :uint (ctx :pointer))
-(defcfun "iio_context_get_device" :pointer (ctx :pointer) (index :uint))
-(defcfun "iio_context_find_device" :pointer (ctx :pointer) (name :string))
-(defcfun "iio_device_get_name" :string (device :pointer))
-(defcfun "iio_context_get_name" :string (ctx :pointer))
-(defcfun "iio_context_get_description" :string (ctx :pointer))
-(defcfun "iio_context_get_attrs_count" :uint (ctx :pointer))
-(defcfun "iio_device_get_channels_count" :uint (device :pointer))
-(defcfun "iio_device_get_channel" :pointer (device :pointer) (index :uint))
-(defcfun "iio_device_find_channel" :pointer (device :pointer) (name :string) (output :bool))
-(defcfun "iio_channel_get_id" :string (channel :pointer))
-(defcfun "iio_channel_get_name" :string (channel :pointer))
-(defcfun "iio_channel_get_attrs_count" :uint (channel :pointer))
-(defcfun "iio_channel_get_attr" :string (channel :pointer) (index :uint))
+(defcfun "iio_create_context_from_uri" :pointer
+  "Create a context from a URI description."
+ (ip :string))
+
+(defcfun "iio_context_get_devices_count" :uint
+  "Enumerate the devices found in the given context."
+  (ctx :pointer))
+
+(defcfun "iio_context_get_device" :pointer
+  "Get the device present at the given index."
+  (ctx :pointer) (index :uint))
+
+(defcfun "iio_context_find_device" :pointer
+  "Try to find a device structure by its name of ID."
+  (ctx :pointer) (name :string))
+
+(defcfun "iio_device_get_name" :string
+  "Retrieve the device name."
+  (device :pointer))
+
+(defcfun "iio_context_get_name" :string
+  "Get the name of the given context."
+  (ctx :pointer))
+
+(defcfun "iio_context_get_description" :string
+  "Get a description of the given context."
+  (ctx :pointer))
+
+(defcfun "iio_context_get_attrs_count" :uint
+  "Get the number of context-specific attributes."
+  (ctx :pointer))
+
+(defcfun "iio_device_get_channels_count" :uint
+  "Enumerate the channels of the given device."
+  (device :pointer))
+
+(defcfun "iio_device_get_channel" :pointer
+  "Get the channel present at the given index."
+  (device :pointer) (index :uint))
+
+(defcfun "iio_device_find_channel" :pointer
+  "Try to find a channel structure by its name of ID."
+  (device :pointer) (name :string) (output :bool))
+
+(defcfun "iio_channel_get_id" :string
+  "Retrieve the channel ID."
+  (channel :pointer))
+
+(defcfun "iio_channel_get_name" :string
+  "Retrieve the channel name."
+  (channel :pointer))
+
+(defcfun "iio_channel_get_attrs_count" :uint
+  "Enumerate the channel-specific attributes of the given channel."
+  (channel :pointer))
+
+(defcfun "iio_channel_get_attr" :string
+  "Get the channel-specific attribute present at the given index."
+  (channel :pointer) (index :uint))
 
 (defun iio-channel-attr-read (channel attr)
+  "Read the content of the given channel-specific attribute."
   (let ((buf-len 64))
     (with-foreign-array (dest (make-array buf-len :initial-element 0)
                               `(:array :char ,buf-len))
@@ -37,6 +82,7 @@
          (remove-if #'zerop raw-dest))))))
 
 (defun iio-context-get-attr (context index)
+  "Retrieve the name and value of a context-specific attribute."
   (let ((name  (foreign-alloc :char :count 100))
         (value (foreign-alloc :char :count 100)))
     (foreign-funcall "iio_context_get_attr"
