@@ -229,7 +229,7 @@ libiio function available, but we don't use that."
   "Set the value of the given device-specific attribute."
   (device :pointer) (attr :string) (value :string))
 
-(defun iio-device-get-buffer-attrs-names (device)
+(defun iio-device-buffer-attrs (device)
   "Return the device attributes as strings. [EXTRA]"
   (loop for i from 0 to (1- (iio-device-get-buffer-attrs-count device))
         collect (iio-device-get-buffer-attr device i)))
@@ -262,7 +262,7 @@ libiio function available, but we don't use that."
                      :pointer trigger)
     (mem-ref trigger :pointer)))
 
-(defcfun "iio_device_set_trigger" :int
+(defcfun "iio_device_get_trigger" :int
   "Associate a trigger to a given device."
   (device :pointer) (trigger :pointer))
 
@@ -277,12 +277,26 @@ libiio function available, but we don't use that."
   "Configure the number of kernel buffers for a device."
   (device :pointer) (nb-buffer :uint))
 
+
+;; Channel functions.
+(defcfun "iio_channel_get_device" :pointer
+  "Retrieve a pointer to the iio_device structure."
+  (channel :pointer))
+
 (defcfun "iio_channel_get_id" :string
   "Retrieve the channel ID."
   (channel :pointer))
 
 (defcfun "iio_channel_get_name" :string
   "Retrieve the channel name."
+  (channel :pointer))
+
+(defcfun "iio_channel_is_output" :bool
+  "Return t if the given channel is an output channel."
+  (channel :pointer))
+
+(defcfun "iio_channel_is_scan_element" :bool
+  "Return t if the given channel is a scan element."
   (channel :pointer))
 
 (defcfun "iio_channel_get_attrs_count" :uint
@@ -293,30 +307,35 @@ libiio function available, but we don't use that."
   "Get the channel-specific attribute present at the given index."
   (channel :pointer) (index :uint))
 
+(defcfun "iio_channel_find_attr" :string
+  "Try to find a channel-specific attribute by its name."
+  (channel :pointer) (name :string))
+
+(defcfun "iio_channel_attr_get_filename" :string
+  "Retrieve the filename of an attribute."
+  (channel :pointer) (name :string))
+
 (defun iio-channel-attr-read (channel attr)
   "Read the content of the given channel-specific attribute."
-  (let ((buf-len 64))
-    (with-foreign-array (dest (make-array buf-len :initial-element 0)
-                              `(:array :char ,buf-len))
-      (foreign-funcall "iio_channel_attr_read"
-                       :pointer channel
-                       :string attr 
-                       (:pointer :string) dest
-                       :uint buf-len
-                       :uint)
-      (foreign-string-to-lisp dest :count (1- buf-len)))))
+  (with-foreign-object (dst :char 256)
+    (foreign-funcall "iio_channel_attr_read"
+                     :pointer channel
+                     :string attr
+                     :pointer dst
+                     :uint 256)
+    (foreign-string-to-lisp dst)))
 
-(defun iio-context-get-attr (context index)
-  "Retrieve the name and value of a context-specific attribute."
-  (with-foreign-objects ((name :char 128)
-                         (value :char 128))
-    (foreign-funcall "iio_context_get_attr"
-                     :pointer context
-                     :uint index
-                     (:pointer :string) name
-                     (:pointer :string) value)
-    (list (mem-aref name :string)
-          (mem-aref value :string))))
+(defun iio-channel-attrs (channel)
+  "Return all channel attributes as strings. [EXTRA]"
+  (loop for i from 0 to (1- (iio-channel-get-attrs-count channel))
+        collect (iio-channel-get-attr channel i)))
+
+(defun iio-channel-attr-read-all (channel)
+  "Read the content of all channel-specific attributes.
+libiio function available, but we don't use that."
+  (mapcar (lambda (attr)
+            (list attr (iio-channel-attr-read channel attr)))
+          (iio-channel-attrs channel)))
 
 (defun context-attributes-and-values (context)
   "List of all the attributes and their values for the given context, as strings."
@@ -334,13 +353,3 @@ libiio function available, but we don't use that."
   (loop for i from 0 to (1- (iio-device-get-channels-count device))
         collect (iio-channel-get-id (iio-device-get-channel device i))))
 
-(defun channel-attributes (channel)
-  (loop for i from 0 to (1- (iio-channel-get-attrs-count channel))
-        collect (iio-channel-get-attr channel i)))
-
-(defun channel-attributes-and-values (channel)
-  "Return a list of all attributes together with their values for the given channel."
-  (let ((attributes (channel-attributes channel)))
-    (mapcar (lambda (attr)
-              (list attr (iio-channel-attr-read channel attr)))
-            attributes)))
