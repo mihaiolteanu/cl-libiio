@@ -38,11 +38,11 @@ Use empty string for backend to search all of them."
 
 (defun iio-strerror (err)
   "Get a string description of the error code."
-  (with-foreign-object (dst :char 128)
+  (with-foreign-object (dst :char 256)
     (foreign-funcall "iio_strerror"
                      :int err
                      :pointer dst
-                     :uint 128)
+                     :uint 256)
     (foreign-string-to-lisp dst)))
 
 (defcfun "iio_has_backend" :bool
@@ -60,6 +60,8 @@ Use empty string for backend to search all of them."
   (loop for i from 0 to (1- (iio-get-backends-count))
       collect (iio-get-backend i)))
 
+
+;;; Context functions.
 (defcfun "iio_create_default_context" :pointer
   "Create a context from local or remote IIO devices.")
 
@@ -113,6 +115,7 @@ Use empty string for backend to search all of them."
   (ctx :pointer))
 
 (defcfun "iio_context_get_description" :string
+  "Get a description of the given context."
   (ctx :pointer))
 
 (defcfun "iio_context_get_attrs_count" :uint
@@ -121,8 +124,8 @@ Use empty string for backend to search all of them."
 
 (defun iio-context-get-attr (context index)
   "Retrieve the name and value of a context-specific attribute."
-  (with-foreign-objects ((name :char 128)
-                         (value :char 128))
+  (with-foreign-objects ((name :char 256)
+                         (value :char 256))
     (foreign-funcall "iio_context_get_attr"
                      :pointer context
                      :uint index
@@ -133,7 +136,7 @@ Use empty string for backend to search all of them."
 
 (defcfun "iio_context_get_attr_value" :string
   "Retrieve the value of a context-specific attribute."
-  (cts :pointer) (name :string))
+  (ctx :pointer) (name :string))
 
 (defcfun "iio_context_get_devices_count" :uint
   "Enumerate the devices found in the given context."
@@ -147,29 +150,132 @@ Use empty string for backend to search all of them."
   "Try to find a device structure by its name of ID."
   (ctx :pointer) (name :string))
 
+(defcfun "iio_context_set_timeout" :int
+  "Set a timeout for I/O operations."
+  (ctx :pointer) (timeout-ms :uint))
+
+
+;;; Device functions.
+(defcfun "iio_device_get_context" :pointer
+  "Retrieve a pointer to the iio_context structure."
+  (device :pointer))
+
+(defcfun "iio_device_get_id" :string
+  "Retrieve the device ID."
+  (device :pointer))
+
 (defcfun "iio_device_get_name" :string
   "Retrieve the device name."
   (device :pointer))
 
-(defcfun "iio_context_get_name" :string
-  "Get the name of the given context."
-  (ctx :pointer))
-
-(defcfun "iio_context_get_description" :string
-  "Get a description of the given context."
-  (ctx :pointer))
-
 (defcfun "iio_device_get_channels_count" :uint
   "Enumerate the channels of the given device."
+  (device :pointer))
+
+(defcfun "iio_device_get_attrs_count" :uint
+  "Enumerate the device-specific attributes of the given device"
+  (device :pointer))
+
+(defcfun "iio_device_get_buffer_attrs_count" :uint
+  "Enumerate the buffer-specific attributes of the given device."
   (device :pointer))
 
 (defcfun "iio_device_get_channel" :pointer
   "Get the channel present at the given index."
   (device :pointer) (index :uint))
 
+(defcfun "iio_device_get_attr" :string
+  "Get the device-specific attribute present at the given index."
+  (device :pointer) (index :uint))
+
+(defcfun "iio_device_get_buffer_attr" :string
+  (device :pointer) (index :uint))
+
 (defcfun "iio_device_find_channel" :pointer
   "Try to find a channel structure by its name of ID."
   (device :pointer) (name :string) (output :bool))
+
+(defcfun "iio_device_find_attr" :string
+  "Try to find a device-specific attribute by its name"
+  (device :pointer) (name :string))
+
+(defcfun "iio_device_find_buffer_attr" :string
+  "Try to find a buffer-specific attribute by its name."
+  (device :pointer) (name :string))
+
+(defun iio-device-attr-read (device attr)
+  "Read the content of the given device-specific attribute."
+  (with-foreign-object (dst :char 256)
+    (foreign-funcall "iio_device_attr_read"
+                     :pointer device
+                     :string attr
+                     :pointer dst
+                     :uint 256)
+    (foreign-string-to-lisp dst)))
+
+(defun iio-device-attrs (device)
+  "Read all device attributes. [EXTRA]"
+  (loop for i from 0 to (1- (iio-device-get-attrs-count device))
+        collect (iio-device-get-attr device i)))
+
+(defun iio-device-attr-read-all (device)
+  "Read the content of all device-specific attributes.
+libiio function available, but we don't use that."
+  (mapcar (lambda (attr)
+            (list attr (iio-device-attr-read device attr)))
+          (iio-device-attrs device)))
+
+(defcfun "iio_device_attr_write" :int
+  "Set the value of the given device-specific attribute."
+  (device :pointer) (attr :string) (value :string))
+
+(defun iio-device-get-buffer-attrs-names (device)
+  "Return the device attributes as strings. [EXTRA]"
+  (loop for i from 0 to (1- (iio-device-get-buffer-attrs-count device))
+        collect (iio-device-get-buffer-attr device i)))
+
+(defun iio-device-buffer-attr-read (device attr)
+  (with-foreign-object (dst :char 256)
+    (foreign-funcall "iio_device_buffer_attr_read"
+                     :pointer device
+                     :string attr
+                     :pointer dst
+                     :uint 256)
+    (foreign-string-to-lisp dst)))
+
+(defun iio-device-buffer-attr-read-all (device)
+  "Read the content of all buffer-specific attributes.
+libiio function available, but we don't use that."
+  (mapcar (lambda (attr)
+            (list attr (iio-device-buffer-attr-read device attr)))
+          (iio-device-get-buffer-attrs-names device)))
+
+(defcfun "iio_device_buffer_attr_write" :int
+  (device :pointer) (attr :string) (value :string))
+
+;; Trigger functions not tested.
+(defun iio-device-get-trigger (device)
+  "Retrieve the trigger of a given device."
+  (with-foreign-object (trigger :pointer)
+    (foreign-funcall "iio_device_set_trigger"
+                     :pointer device
+                     :pointer trigger)
+    (mem-ref trigger :pointer)))
+
+(defcfun "iio_device_set_trigger" :int
+  "Associate a trigger to a given device."
+  (device :pointer) (trigger :pointer))
+
+(defcfun "iio_device_set_trigger" :int
+  (device :pointer) (trigger :pointer))
+
+(defcfun "iio_device_is_trigger" :bool
+  "Return t if the given device is a trigger."
+  (device :pointer))
+
+(defcfun "iio_device_set_kernel_buffers_count" :int
+  "Configure the number of kernel buffers for a device."
+  (device :pointer) (nb-buffer :uint))
 
 (defcfun "iio_channel_get_id" :string
   "Retrieve the channel ID."
