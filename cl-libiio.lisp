@@ -36,9 +36,104 @@ Use empty string for backend to search all of them."
           :minor (mem-aref minor :uint)
           :git-tag (foreign-string-to-lisp git-tag :count 7))))
 
+(defun iio-strerror (err)
+  "Get a string description of the error code."
+  (with-foreign-object (dst :char 128)
+    (foreign-funcall "iio_strerror"
+                     :int err
+                     :pointer dst
+                     :uint 128)
+    (foreign-string-to-lisp dst)))
+
+(defcfun "iio_has_backend" :bool
+  "Check if the specified backend is available."
+  (backend :string))
+
+(defcfun "iio_get_backends_count" :uint
+  "Get the number of available backends")
+
+(defcfun "iio_get_backend" :string
+  (index :uint))
+
+(defun backends ()
+  "Get all the avaliable backends, as strings."
+  (loop for i from 0 to (1- (iio-get-backends-count))
+      collect (iio-get-backend i)))
+
+(defcfun "iio_create_default_context" :pointer
+  "Create a context from local or remote IIO devices.")
+
+(defcfun "iio_create_local_context" :pointer
+  "Create a context from local IIO devices (Linux only).")
+
+(defcfun "iio_create_xml_context" :pointer
+  "Create a context from a XML file"
+  (xml-file :string))
+
+(defcfun "iio_create_xml_context_mem" :pointer
+  "Create a context from XML data in memory"
+  (xml :string) (len :uint))
+
+(defcfun "iio_create_network_context" :pointer
+  "Create a context from the network"
+  (host :string))
+
 (defcfun "iio_create_context_from_uri" :pointer
   "Create a context from a URI description."
  (ip :string))
+
+(defcfun "iio_context_clone" :pointer
+  "Duplicate a pre-existing IIO context."
+  (ctx :pointer))
+
+(defcfun "iio_context_destroy" :void
+  "Destroy the given context."
+  (ctx :pointer))
+
+(defun iio-context-get-version (context)
+  "Get the version of the backend in use."
+  (with-foreign-objects ((major :uint 1)
+                         (minor :uint 1)
+                         (git-tag :char 8))
+    (foreign-funcall "iio_context_get_version"
+                     :pointer context
+                     :pointer major
+                     :pointer minor
+                     :pointer git-tag)
+    (list :major (mem-aref major :uint)
+          :minor (mem-aref minor :uint)
+          :git-tag (foreign-string-to-lisp git-tag :count 7))))
+
+(defcfun "iio_context_get_xml" :string
+  "Obtain a XML representation of the given context."
+  (ctx :pointer))
+
+(defcfun "iio_context_get_name" :string
+  "Get the name of the given context."
+  (ctx :pointer))
+
+(defcfun "iio_context_get_description" :string
+  (ctx :pointer))
+
+(defcfun "iio_context_get_attrs_count" :uint
+  "Get the number of context-specific attributes."
+  (ctx :pointer))
+
+(defun iio-context-get-attr (context index)
+  "Retrieve the name and value of a context-specific attribute."
+  (with-foreign-objects ((name :char 128)
+                         (value :char 128))
+    (foreign-funcall "iio_context_get_attr"
+                     :pointer context
+                     :uint index
+                     (:pointer :string) name
+                     (:pointer :string) value)
+    (list (mem-aref name :string)
+          (mem-aref value :string))))
+
+(defcfun "iio_context_get_attr_value" :string
+  "Retrieve the value of a context-specific attribute."
+  (cts :pointer) (name :string))
 
 (defcfun "iio_context_get_devices_count" :uint
   "Enumerate the devices found in the given context."
@@ -62,10 +157,6 @@ Use empty string for backend to search all of them."
 
 (defcfun "iio_context_get_description" :string
   "Get a description of the given context."
-  (ctx :pointer))
-
-(defcfun "iio_context_get_attrs_count" :uint
-  "Get the number of context-specific attributes."
   (ctx :pointer))
 
 (defcfun "iio_device_get_channels_count" :uint
@@ -121,7 +212,7 @@ Use empty string for backend to search all of them."
     (list (mem-aref name :string)
           (mem-aref value :string))))
 
-(defun context-attributes (context)
+(defun context-attributes-and-values (context)
   "List of all the attributes and their values for the given context, as strings."
   (loop for i from 0 to (1- (iio-context-get-attrs-count context))
         collect (iio-context-get-attr context i)))
