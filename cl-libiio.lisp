@@ -6,6 +6,22 @@
   (t (:default "libiio")))
 (use-foreign-library libiio)
 
+(defcfun "iio_create_scan_context" :pointer
+  "Create a context besed on the backend (ip, usb or xml).
+Use empty string for backend to search all of them."
+  (backend :string) (flags :uint))
+
+(defcfun "iio_scan_context_destroy" :void
+  "Destroy the given scan context."
+  (context :pointer))
+
+;; This function returns 0 even when called directly from C and even when there are available
+;; contexts (device connected to usb, for example). As a result, the rest of the functionality
+;; for scan_context is not currently implemented.
+(defcfun "iio_scan_context_get_info_list" :uint
+  "Enumerate available contexts."
+  (scan-context :pointer) (info (:pointer (:pointer :pointer))))
+
 (defcfun "iio_create_context_from_uri" :pointer
   "Create a context from a URI description."
  (ip :string))
