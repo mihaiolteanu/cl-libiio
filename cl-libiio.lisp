@@ -118,17 +118,15 @@ Use empty string for backend to search all of them."
 
 (defun iio-context-get-attr (context index)
   "Retrieve the name and value of a context-specific attribute."
-  (let ((name  (foreign-alloc :char :count 100))
-        (value (foreign-alloc :char :count 100)))
+  (with-foreign-objects ((name :char 128)
+                         (value :char 128))
     (foreign-funcall "iio_context_get_attr"
                      :pointer context
                      :uint index
                      (:pointer :string) name
                      (:pointer :string) value)
-    (prog1 (list (mem-aref name :string)
-                 (mem-aref value :string))
-      (foreign-free name)
-      (foreign-free value))))
+    (list (mem-aref name :string)
+          (mem-aref value :string))))
 
 (defun context-attributes (context)
   "List of all the attributes and their values for the given context, as strings."
