@@ -6,13 +6,6 @@
   (t (:default "libiio")))
 (use-foreign-library libiio)
 
-;;; Helpers.
-(defun foreign-array-to-string (char-array len)
-  "Return the string representation of the foreign char array of lenght len."
-  (let ((raw-dest (foreign-array-to-lisp char-array `(:array :char ,len))))
-    (octets-to-string
-     (remove-if #'zerop raw-dest))))
-
 ;;; iiolib interface implementation.
 (defcfun "iio_create_scan_context" :pointer
   "Create a context besed on the backend (ip, usb or xml).
@@ -41,7 +34,7 @@ Use empty string for backend to search all of them."
                      :pointer git-tag)
     (list :major (mem-aref major :uint)
           :minor (mem-aref minor :uint)
-          :git-tag (foreign-array-to-string git-tag 8)))) 
+          :git-tag (foreign-string-to-lisp git-tag :count 7))))
 
 (defcfun "iio_create_context_from_uri" :pointer
   "Create a context from a URI description."
@@ -114,7 +107,7 @@ Use empty string for backend to search all of them."
                        (:pointer :string) dest
                        :uint buf-len
                        :uint)
-      (foreign-array-to-string dest buf-len))))
+      (foreign-string-to-lisp dest :count (1- buf-len)))))
 
 (defun iio-context-get-attr (context index)
   "Retrieve the name and value of a context-specific attribute."

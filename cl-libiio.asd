@@ -5,8 +5,7 @@
   :author "Mihai Olteanu"
   :license "GPLv3"
   :version "0.1"
-  :depends-on (:cffi
-               :flexi-streams)
+  :depends-on (:cffi)
   :serial t
   :components ((:file "package")
                (:file "cl-libiio")))
