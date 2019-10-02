@@ -429,3 +429,78 @@ libiio function available, but we don't use that."
   "Get the modifier type of the given channel."
   (channel :pointer))
 
+;; Buffer functions.
+(defcfun "iio_buffer_get_device" :pointer
+  "Retrieve a pointer to the iio_device structure."
+  (buffer :pointer))
+
+(defcfun "iio_device_create_buffer" :pointer
+  "Create an input or output buffer associated to the given device."
+  (device :pointer) (samples-count :uint) (cyclic :bool))
+
+(defcfun "ioo_buffer_destroy" :void
+  "Destroy the given buffer."
+  (buffer :pointer))
+
+(defun iio-buffer-get-poll-fd (buffer)
+  (foreign-funcall-with-err-handle "iio_buffer_get_poll_fd"
+      :pinter buffer
+      int
+      ;; Return a valid file descriptor on success.
+      return-code))
+
+(defun iio-buffer-set-blocking-mode (buffer blocking)
+  (foreign-funcall-with-err-handle "iio_buffer_set_blocking_mode"
+      :pointer buffer
+      :bool blocking
+      :int
+      ;; Returns 0 on success, actually (see libiio doc).
+      return-code))
+
+(defun iio-buffer-refill (buffer)
+  "Fetch more samples from the hardware."
+  (foreign-funcall-with-err-handle "iio_buffer_refill"
+      :pointer buffer
+      :int
+      ;; Return the number of bytes read in case of success.
+      return-code))
+
+(defun iio-buffer-push (buffer)
+  "Send the samples to the hardware."
+  (foreign-funcall-with-err-handle "iio_buffer_push"
+      :pointer buffer
+      int
+      ;; Return the number of bytes written in case of success.
+      return-code))
+
+(defun iio-buffer-push-partial (buffer samples-count)
+  "Send a given number of samples to the hardware."
+  (foreign-funcall-with-err-handle "iio_buffer_push_partial"
+      :pointer buffer
+      :uint samples-count
+      int
+      ;; Return the number of bytes written in case of success.
+      return-code))
+
+(defcfun "iio_buffer_cancel" :void
+  (buffer :pointer))
+
+(defcfun "iio_buffer_start" :pointer
+  "Get the start address of the buffer"
+  (buffer :pointer))
+
+(defcfun "ioo_buffer_first" :pointer
+  "Find the first sample of a channel in a buffer."
+  (buffer :pointer) (channel :pointer))
+
+(defcfun "ioo_buffer_step" :uint
+  "Get the step size between two samples of one channel."
+  (buffer :pointer))
+
+(defcfun "iio_buffer_end" :pointer
+  "Get the address that follows the last sample in a buffer."
+  (buffer :pointer))
+
+;; Not implemented
+(defcfun "iio_buffer_foreach_sample" :int
+  "Call the supplied callback for each sample found in a buffer.")
