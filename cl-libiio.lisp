@@ -94,21 +94,21 @@ Use empty string for backend to search all of them."
   "Destroy the given context."
   (ctx :pointer))
 
-(defun iio-success-p (err-code)
-  "Return t if err-code is non-negative [EXTRA].  
+(defun iio-success-p (return-code)
+  "Return t if return-code is non-negative [EXTRA].  
 Useful for libiio functions which signal an error by returning a
 negative error code."
-  (>= err-code 0))
+  (>= return-code 0))
 
 (defmacro foreign-funcall-with-err-handle (name &rest options-and-success)
   "Same as foreign-funcall, but there is an extra form at the end to
 be evaluated. Its value is returned if the foreign call is succesful.
 Otherwise, return the error code together with the error string."
-  `(let ((err-code (foreign-funcall ,name
+  `(let ((return-code (foreign-funcall ,name
                                     ,@(butlast options-and-success))))
-     (if (iio-success-p err-code)
+     (if (iio-success-p return-code)
          ,(alexandria:last-elt options-and-success)
-         (values (abs err-code) (iio-strerror (abs err-code))))))
+         (values (abs return-code) (iio-strerror (abs return-code))))))
 
 (defun iio-context-get-version (context)
   "Get the version of the backend in use."
