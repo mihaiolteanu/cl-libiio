@@ -104,10 +104,11 @@ negative error code."
   "Same as foreign-funcall, but there is an extra form at the end to
 be evaluated. Its value is returned if the foreign call is succesful.
 Otherwise, return the error code together with the error string."
-  `(let ((return-code (foreign-funcall ,name
-                                    ,@(butlast options-and-success))))
+  `(let ((return-code (foreign-funcall
+                       ,name
+                       ,@(butlast options-and-success))))
      (if (iio-success-p return-code)
-         ,(alexandria:last-elt options-and-success)
+         ,(last-elt options-and-success)
          (values (abs return-code) (iio-strerror (abs return-code))))))
 
 (defun iio-context-get-version (context)
