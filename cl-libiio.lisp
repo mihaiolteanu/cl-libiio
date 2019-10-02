@@ -316,6 +316,11 @@ libiio function available, but we don't use that."
   "Configure the number of kernel buffers for a device."
   (device :pointer) (nb-buffer :uint))
 
+(defun iio-device-get-channels (device)
+  "Return all channels for the given device [EXTRA]."
+  (loop for i from 0 to (1- (iio-device-get-channels-count device))
+        collect (iio-channel-get-id
+                 (iio-device-get-channel device i))))
 
 ;; Channel functions.
 (defcfun "iio_channel_get_device" :pointer
@@ -377,8 +382,4 @@ libiio function available, but we don't use that."
             (list attr (iio-channel-attr-read channel attr)))
           (iio-channel-attrs channel)))
 
-(defun channels (device)
-  "List of all channels for the given device, as strings."
-  (loop for i from 0 to (1- (iio-device-get-channels-count device))
-        collect (iio-channel-get-id (iio-device-get-channel device i))))
 
