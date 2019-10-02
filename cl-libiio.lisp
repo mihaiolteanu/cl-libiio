@@ -444,8 +444,8 @@ libiio function available, but we don't use that."
 
 (defun iio-buffer-get-poll-fd (buffer)
   (foreign-funcall-with-err-handle "iio_buffer_get_poll_fd"
-      :pinter buffer
-      int
+      :pointer buffer
+      :int
       ;; Return a valid file descriptor on success.
       return-code))
 
@@ -469,7 +469,7 @@ libiio function available, but we don't use that."
   "Send the samples to the hardware."
   (foreign-funcall-with-err-handle "iio_buffer_push"
       :pointer buffer
-      int
+      :int
       ;; Return the number of bytes written in case of success.
       return-code))
 
@@ -478,7 +478,7 @@ libiio function available, but we don't use that."
   (foreign-funcall-with-err-handle "iio_buffer_push_partial"
       :pointer buffer
       :uint samples-count
-      int
+      :int
       ;; Return the number of bytes written in case of success.
       return-code))
 
