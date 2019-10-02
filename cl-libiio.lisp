@@ -382,4 +382,50 @@ libiio function available, but we don't use that."
             (list attr (iio-channel-attr-read channel attr)))
           (iio-channel-attrs channel)))
 
+(defcfun "iio_channel_attr_write" :int
+  "Set the value of the given channel-specific attribute."
+  (channel :pointer) (attr :string) (value :string))
+
+(defcfun "iio_channel_enable" :void
+  "Enable the given channel."
+  (channel :pointer))
+
+(defcfun "iio_channel_disable" :void
+  "Disable the given channel."
+  (channel :pointer))
+
+(defcfun "iio_channel_is_enabled" :bool
+  "Return t if the channel is enabled."
+  (channel :pointer))
+
+;; Not implemented
+(defun iio-channel-read (channel buffer len)
+  "Demultiplex and convert the samples of a given channel."
+  (with-foreign-object (dest :uint32 len)
+    (foreign-funcall-with-err-handle "iio_channel_read"
+        :pointer channel
+        :pointer buffer
+        :pointer dest
+        :uint len
+        :int
+        dest)))
+
+;; Not implemented
+(defun iio-channel-write (channel buffer src len)
+  "Convert and multiplex the samples of a given channel"
+  (foreign-funcall-with-err-handle "iio_channel_write"
+      :pointer channel
+      :pointer buffer
+      :pointer src
+      :uint32 len
+      :int
+      dest))
+
+(defcfun "iio_channel_get_type" :uint
+  "Get the type of the given channel."
+  (channel :pointer))
+
+(defcfun "iio_channel_get_modifier" :uint
+  "Get the modifier type of the given channel."
+  (channel :pointer))
 
