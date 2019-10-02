@@ -505,3 +505,20 @@ libiio function available, but we don't use that."
 ;; Not implemented
 (defcfun "iio_buffer_foreach_sample" :int
   "Call the supplied callback for each sample found in a buffer.")
+
+;; Low-level functions.
+(defun iio-device-get-sample-size (device)
+  (foreign-funcall-with-err-handle "iio_device_get_sample_size"
+      :pointer device
+      :int
+      ;; Return the sample size on success.
+      return-code))
+
+(defcfun "iio_channel_get_index" :long
+  "Get the index of the given channel"
+  (channel :pointer))
+
+;; iio_data_format structure not implemented.
+(defcfun "iio_channel_get_data_format" :pointer
+  "Get a pointer to a channel's data format structure"
+  (channel :pointer))
