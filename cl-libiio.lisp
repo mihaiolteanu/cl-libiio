@@ -185,6 +185,11 @@ Otherwise, return the error code together with the error string."
   "Set a timeout for I/O operations."
   (ctx :pointer) (timeout-ms :uint))
 
+(defun iio-context-get-devices (context)
+  "Return all devices for the given context, as strings [EXTRA]."
+  (loop for i from 0 to (1- (iio-context-get-devices-count *context*))
+        collect
+        (iio-device-get-name (iio-context-get-device *context* i))))
 
 ;;; Device functions.
 (defcfun "iio_device_get_context" :pointer
@@ -371,12 +376,6 @@ libiio function available, but we don't use that."
   (mapcar (lambda (attr)
             (list attr (iio-channel-attr-read channel attr)))
           (iio-channel-attrs channel)))
-
-(defun devices (context)
-  "List of all devices available for the given context, as strings."
-  (loop for i from 0 to (1- (iio-context-get-devices-count *context*))
-        collect
-        (iio-device-get-name (iio-context-get-device *context* i))))
 
 (defun channels (device)
   "List of all channels for the given device, as strings."
