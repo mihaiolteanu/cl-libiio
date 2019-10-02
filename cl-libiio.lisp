@@ -92,19 +92,38 @@ Use empty string for backend to search all of them."
   "Destroy the given context."
   (ctx :pointer))
 
+(defun iio-success-p (err-code)
+  "Return t if err-code is non-negative [EXTRA].  
+Useful for libiio functions which signal an error by returning a
+negative error code."
+  (>= err-code 0))
+
+(defmacro foreign-funcall-with-err-handle (name &rest options-and-success)
+  "Same as foreign-funcall, but there is an extra form at the end to
+be evaluated. Its value is returned if the foreign call is succesful.
+Otherwise, return the error code together with the error string."
+  `(let ((err-code (foreign-funcall ,name
+                                    ,@(butlast options-and-success))))
+     (if (iio-success-p err-code)
+         ,(alexandria:last-elt options-and-success)
+         (values (abs err-code) (iio-strerror (abs err-code))))))
+
 (defun iio-context-get-version (context)
   "Get the version of the backend in use."
   (with-foreign-objects ((major :uint 1)
                          (minor :uint 1)
                          (git-tag :char 8))
-    (foreign-funcall "iio_context_get_version"
-                     :pointer context
-                     :pointer major
-                     :pointer minor
-                     :pointer git-tag)
-    (list :major (mem-aref major :uint)
-          :minor (mem-aref minor :uint)
-          :git-tag (foreign-string-to-lisp git-tag :count 7))))
+    (foreign-funcall-with-err-handle "iio_context_get_version"
+        :pointer context
+        :pointer major
+        :pointer minor
+        :pointer git-tag
+        :int
+        (list :major (mem-aref major :uint)
+              :minor (mem-aref minor :uint)
+              :git-tag (foreign-string-to-lisp git-tag :count 7)))))
+
+;; (iio-context-get-version *context*)
 
 (defcfun "iio_context_get_xml" :string
   "Obtain a XML representation of the given context."
@@ -126,13 +145,14 @@ Use empty string for backend to search all of them."
   "Retrieve the name and value of a context-specific attribute."
   (with-foreign-objects ((name :char 256)
                          (value :char 256))
-    (foreign-funcall "iio_context_get_attr"
-                     :pointer context
-                     :uint index
-                     (:pointer :string) name
-                     (:pointer :string) value)
-    (list (mem-aref name :string)
-          (mem-aref value :string))))
+    (foreign-funcall-with-err-handle "iio_context_get_attr"
+        :pointer context
+        :uint index
+        (:pointer :string) name
+        (:pointer :string) value
+        :int
+        (list (mem-aref name :string)
+              (mem-aref value :string)))))
 
 (defcfun "iio_context_get_attr_value" :string
   "Retrieve the value of a context-specific attribute."
@@ -206,12 +226,13 @@ Use empty string for backend to search all of them."
 (defun iio-device-attr-read (device attr)
   "Read the content of the given device-specific attribute."
   (with-foreign-object (dst :char 256)
-    (foreign-funcall "iio_device_attr_read"
-                     :pointer device
-                     :string attr
-                     :pointer dst
-                     :uint 256)
-    (foreign-string-to-lisp dst)))
+    (foreign-funcall-with-err-handle "iio_device_attr_read"
+        :pointer device
+        :string attr
+        :pointer dst
+        :uint 256
+        :int
+        (foreign-string-to-lisp dst))))
 
 (defun iio-device-attrs (device)
   "Read all device attributes. [EXTRA]"
@@ -236,12 +257,13 @@ libiio function available, but we don't use that."
 
 (defun iio-device-buffer-attr-read (device attr)
   (with-foreign-object (dst :char 256)
-    (foreign-funcall "iio_device_buffer_attr_read"
-                     :pointer device
-                     :string attr
-                     :pointer dst
-                     :uint 256)
-    (foreign-string-to-lisp dst)))
+    (foreign-funcall-with-err-handle "iio_device_buffer_attr_read"
+        :pointer device
+        :string attr
+        :pointer dst
+        :uint 256
+        :int
+        (foreign-string-to-lisp dst))))
 
 (defun iio-device-buffer-attr-read-all (device)
   "Read the content of all buffer-specific attributes.
@@ -257,10 +279,11 @@ libiio function available, but we don't use that."
 (defun iio-device-get-trigger (device)
   "Retrieve the trigger of a given device."
   (with-foreign-object (trigger :pointer)
-    (foreign-funcall "iio_device_set_trigger"
-                     :pointer device
-                     :pointer trigger)
-    (mem-ref trigger :pointer)))
+    (foreign-funcall-with-err-handle "iio_device_set_trigger"
+        :pointer device
+        :pointer trigger
+        :int
+        (mem-ref trigger :pointer))))
 
 (defcfun "iio_device_get_trigger" :int
   "Associate a trigger to a given device."
@@ -318,12 +341,13 @@ libiio function available, but we don't use that."
 (defun iio-channel-attr-read (channel attr)
   "Read the content of the given channel-specific attribute."
   (with-foreign-object (dst :char 256)
-    (foreign-funcall "iio_channel_attr_read"
-                     :pointer channel
-                     :string attr
-                     :pointer dst
-                     :uint 256)
-    (foreign-string-to-lisp dst)))
+    (foreign-funcall-with-err-handle "iio_channel_attr_read"
+        :pointer channel
+        :string attr
+        :pointer dst
+        :uint 256
+        :int
+        (foreign-string-to-lisp dst))))
 
 (defun iio-channel-attrs (channel)
   "Return all channel attributes as strings. [EXTRA]"
