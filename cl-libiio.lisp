@@ -31,7 +31,8 @@ Use empty string for backend to search all of them."
     (foreign-funcall "iio_library_get_version"
                      :pointer major
                      :pointer minor
-                     :pointer git-tag)
+                     :pointer git-tag
+                     :void)
     (list :major (mem-aref major :uint)
           :minor (mem-aref minor :uint)
           :git-tag (foreign-string-to-lisp git-tag :count 7))))
@@ -42,7 +43,8 @@ Use empty string for backend to search all of them."
     (foreign-funcall "iio_strerror"
                      :int err
                      :pointer dst
-                     :uint 256)
+                     :uint 256
+                     :void)
     (foreign-string-to-lisp dst)))
 
 (defcfun "iio_has_backend" :bool
@@ -279,7 +281,7 @@ libiio function available, but we don't use that."
 libiio function available, but we don't use that."
   (mapcar (lambda (attr)
             (list attr (iio-device-buffer-attr-read device attr)))
-          (iio-device-get-buffer-attrs-names device)))
+          (iio-device-buffer-attrs device)))
 
 (defcfun "iio_device_buffer_attr_write" :int
   (device :pointer) (attr :string) (value :string))
