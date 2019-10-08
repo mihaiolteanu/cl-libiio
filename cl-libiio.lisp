@@ -287,8 +287,14 @@ libiio function available, but we don't use that."
             (list attr (iio-device-buffer-attr-read device attr)))
           (iio-device-buffer-attrs device)))
 
-(defcfun "iio_device_buffer_attr_write" :int
-  (device :pointer) (attr :string) (value :string))
+(defun iio-device-buffer-attr-write (device attr value)
+  (foreign-funcall-with-err-handle "iio_device_buffer_attr_write"
+    :pointer device
+    :string attr
+    :string value
+    :int
+    ;; Return the number of bytes written on success.
+    return-code))
 
 ;; Trigger functions not tested.
 (defun iio-device-get-trigger (device)
@@ -316,10 +322,13 @@ libiio function available, but we don't use that."
   (device :pointer) (nb-buffer :uint))
 
 (defun iio-device-get-channels (device)
-  "Return all channels for the given device [EXTRA]."
+  "Return all channels for the given device, as pointers to channels [EXTRA]."
   (loop for i from 0 to (1- (iio-device-get-channels-count device))
-        collect (iio-channel-get-id
-                 (iio-device-get-channel device i))))
+        collect (iio-device-get-channel device i)))
+
+(defun iio-device-get-channels-str (device)
+  "Return all channels for the given device, as strings [EXTRA]."
+  (mapcar #'iio-channel-get-id (iio-device-get-channels device)))
 
 ;; Channel functions.
 (defcfun "iio_channel_get_device" :pointer
@@ -537,6 +546,15 @@ libiio function available, but we don't use that."
 
 ;; Low-level functions.
 (defun iio-device-get-sample-size (device)
+  "Get the current sample size.
+On success, the sample size in bytes is returned.
+Warning! The sample size is not constant and will change when channels
+get enabled or disabled, for example: If one channel is enabled and
+the returned sample size is two (bytes); and if then another channel
+is enabled and the returned sample size is four (bytes), and you
+create a buffer with 10 samples count, then the buffer will be filled
+with 40 bytes, where the first two bytes are the first channel sample,
+the next two bytes are the second channel sample, and so on."
   (foreign-funcall-with-err-handle "iio_device_get_sample_size"
     :pointer device
     :int
@@ -547,7 +565,7 @@ libiio function available, but we don't use that."
   "Get the index of the given channel"
   (channel :pointer))
 
-;; iio_data_format structure not implemented.
+;; TODO: iio_data_format structure not implemented.
 (defcfun "iio_channel_get_data_format" :pointer
   "Get a pointer to a channel's data format structure"
   (channel :pointer))
