@@ -585,3 +585,7 @@ the next two bytes are the second channel sample, and so on."
 (defcfun "iio_channel_get_data_format" :pointer
   "Get a pointer to a channel's data format structure"
   (channel :pointer))
+
+;; TODO: handle null pointer returns. For example,
+;; (iio-create-context-from-uri "ip:192.168.2.1"), when the device is
+;; not connected, a null pointer is returned. Maybe return nil instead.
