@@ -439,7 +439,38 @@ libiio function available, but we don't use that."
   "Create an input or output buffer associated to the given device."
   (device :pointer) (samples-count :uint) (cyclic :bool))
 
-(defcfun "ioo_buffer_destroy" :void
+(defun iio-device-enabled-channels-count (device)
+  "Return the number of enabled channels for the device. [EXTRA]"
+  (count t (mapcar #'iio-channel-is-enabled
+                   (iio-device-get-channels device))))
+
+(defun iio-buffer-collect-all-samples (buffer)
+  "Return the buffer values for all the channels"
+  (let ((samples (iio-buffer-samples-count buffer))
+        (step (iio-buffer-step buffer)))
+    (loop for i from 0 to (1- samples) by step
+          collect (mem-aref (iio-buffer-start buffer)
+                            :int16 i))))
+
+(defun iio-buffer-collect-channel-samples (buffer channel)
+  "Return the buffer values for the given channel."
+  (let ((samples (/ (iio-buffer-samples-count buffer)
+                    (iio-device-get-sample-size
+                     (iio-buffer-get-device buffer))))
+        (step (iio-buffer-step buffer)))
+    (loop for i from 0 to samples
+          collect (mem-aref (iio-buffer-first buffer channel)
+                            :int16 i))))
+
+(defun iio-buffer-samples-count (buffer)
+  "Return the number of samples currently in the buffer. [EXTRA]"
+  (- (pointer-address (iio-buffer-end buffer))
+     (pointer-address (iio-buffer-start buffer))))
+
+;; TODO: implement such that destroying a buffer a second time has no
+;; effect and just returns nil. The current implementation fails with
+;; an "Unhandled memory fault at #x0" error.
+(defcfun "iio_buffer_destroy" :void
   "Destroy the given buffer."
   (buffer :pointer))
 
@@ -490,11 +521,11 @@ libiio function available, but we don't use that."
   "Get the start address of the buffer"
   (buffer :pointer))
 
-(defcfun "ioo_buffer_first" :pointer
+(defcfun "iio_buffer_first" :pointer
   "Find the first sample of a channel in a buffer."
   (buffer :pointer) (channel :pointer))
 
-(defcfun "ioo_buffer_step" :uint
+(defcfun "iio_buffer_step" :uint
   "Get the step size between two samples of one channel."
   (buffer :pointer))
 
