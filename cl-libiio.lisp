@@ -57,7 +57,7 @@ Use empty string for backend to search all of them."
 (defcfun "iio_get_backend" :string
   (index :uint))
 
-(defun backends ()
+(defun iio-backends ()
   "Get all the avaliable backends, as strings."
   (loop for i from 0 to (1- (iio-get-backends-count))
       collect (iio-get-backend i)))
@@ -406,9 +406,9 @@ libiio function available, but we don't use that."
   "Return t if the channel is enabled."
   (channel :pointer))
 
-;; Not implemented
 (defun iio-channel-read (channel buffer len)
-  "Demultiplex and convert the samples of a given channel."
+  "[Not implemented] Demultiplex and convert the samples of a given
+channel."
   (with-foreign-object (dest :uint32 len)
     (foreign-funcall-with-err-handle "iio_channel_read"
       :pointer channel
@@ -418,9 +418,9 @@ libiio function available, but we don't use that."
       :int
       (foreign-array-to-lisp dest :uint32))))
 
-;; Not implemented
 (defun iio-channel-write (channel buffer src len)
-  "Convert and multiplex the samples of a given channel"
+  "[Not implemented] Convert and multiplex the samples of a given
+channel."
   (foreign-funcall-with-err-handle "iio_channel_write"
     :pointer channel
     :pointer buffer
@@ -556,9 +556,9 @@ and the second element is the samples read from the buffer."
   "Get the address that follows the last sample in a buffer."
   (buffer :pointer))
 
-;; Not implemented
 (defcfun "iio_buffer_foreach_sample" :int
-  "Call the supplied callback for each sample found in a buffer.")
+  "[Not implemented] Call the supplied callback for each sample found
+  in a buffer.")
 
 ;; Low-level functions.
 (defun iio-device-get-sample-size (device)
