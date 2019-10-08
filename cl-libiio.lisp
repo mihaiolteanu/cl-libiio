@@ -446,28 +446,44 @@ libiio function available, but we don't use that."
   "Create an input or output buffer associated to the given device."
   (device :pointer) (samples-count :uint) (cyclic :bool))
 
+(defun iio-device-enabled-channels (device)
+  "Returns a list of enabled channels, as pointers. [EXTRA]"
+  (remove-if (complement #'iio-channel-is-enabled)
+             (iio-device-get-channels device)))
+
 (defun iio-device-enabled-channels-count (device)
   "Return the number of enabled channels for the device. [EXTRA]"
-  (count t (mapcar #'iio-channel-is-enabled
-                   (iio-device-get-channels device))))
-
-(defun iio-buffer-collect-all-samples (buffer)
-  "Return the buffer values for all the channels"
-  (let ((samples (iio-buffer-samples-count buffer))
-        (step (iio-buffer-step buffer)))
-    (loop for i from 0 to (1- samples) by step
-          collect (mem-aref (iio-buffer-start buffer)
-                            :int16 i))))
+  (length (iio-device-enabled-channels device)))
 
 (defun iio-buffer-collect-channel-samples (buffer channel)
-  "Return the buffer values for the given channel."
-  (let ((samples (/ (iio-buffer-samples-count buffer)
-                    (iio-device-get-sample-size
-                     (iio-buffer-get-device buffer))))
-        (step (iio-buffer-step buffer)))
+  "Return the buffer values for a single channel."
+  (let* ((device (iio-buffer-get-device buffer))
+         (sample-size (iio-device-get-sample-size device))
+         ;; How many bytes are there, for a channel, assuming all
+         ;; channels have the same sample size.
+         (size-per-channel
+           (/ sample-size (iio-device-enabled-channels-count device)))
+         (samples (/ (iio-buffer-samples-count buffer)
+                     sample-size))
+         (type (case size-per-channel
+                 (1 :int8)
+                 (2 :int16)
+                 (4 :int32)
+                 (8 :int64))))
     (loop for i from 0 to samples
           collect (mem-aref (iio-buffer-first buffer channel)
-                            :int16 i))))
+                            type i))))
+
+(defun iio-buffer-collect-all-samples (buffer)
+  "Return the buffer values for all the enabled channels. [EXTRA] 
+The return values are lists where the first element is the channel id
+and the second element is the samples read from the buffer."
+  (let* ((device (iio-buffer-get-device buffer))
+         (channels (iio-device-enabled-channels device)))
+    (mapcar (lambda (channel)
+              (list (iio-channel-get-id channel)
+                    (iio-buffer-collect-channel-samples buffer channel)))
+            channels)))
 
 (defun iio-buffer-samples-count (buffer)
   "Return the number of samples currently in the buffer. [EXTRA]"
