@@ -100,7 +100,7 @@ Useful for libiio functions which signal an error by returning a
 negative error code."
   (>= return-code 0))
 
-(defmacro foreign-funcall-with-err-handle (name &rest options-and-success)
+(defmacro foreign-funcall-with-err-handle (name &body options-and-success)
   "Same as foreign-funcall, but there is an extra form at the end to
 be evaluated. Its value is returned if the foreign call is succesful.
 Otherwise, return the error code together with the error string."
@@ -117,16 +117,14 @@ Otherwise, return the error code together with the error string."
                          (minor :uint 1)
                          (git-tag :char 8))
     (foreign-funcall-with-err-handle "iio_context_get_version"
-        :pointer context
-        :pointer major
-        :pointer minor
-        :pointer git-tag
-        :int
-        (list :major (mem-aref major :uint)
-              :minor (mem-aref minor :uint)
-              :git-tag (foreign-string-to-lisp git-tag :count 7)))))
-
-;; (iio-context-get-version *context*)
+      :pointer context
+      :pointer major
+      :pointer minor
+      :pointer git-tag
+      :int
+      (list :major (mem-aref major :uint)
+            :minor (mem-aref minor :uint)
+            :git-tag (foreign-string-to-lisp git-tag :count 7)))))
 
 (defcfun "iio_context_get_xml" :string
   "Obtain a XML representation of the given context."
@@ -149,13 +147,13 @@ Otherwise, return the error code together with the error string."
   (with-foreign-objects ((name :char 256)
                          (value :char 256))
     (foreign-funcall-with-err-handle "iio_context_get_attr"
-        :pointer context
-        :uint index
-        (:pointer :string) name
-        (:pointer :string) value
-        :int
-        (list (mem-aref name :string)
-              (mem-aref value :string)))))
+      :pointer context
+      :uint index
+      (:pointer :string) name
+      (:pointer :string) value
+      :int
+      (list (mem-aref name :string)
+            (mem-aref value :string)))))
 
 (defcfun "iio_context_get_attr_value" :string
   "Retrieve the value of a context-specific attribute."
@@ -244,12 +242,12 @@ Otherwise, return the error code together with the error string."
   "Read the content of the given device-specific attribute."
   (with-foreign-object (dst :char 256)
     (foreign-funcall-with-err-handle "iio_device_attr_read"
-        :pointer device
-        :string attr
-        :pointer dst
-        :uint 256
-        :int
-        (foreign-string-to-lisp dst))))
+      :pointer device
+      :string attr
+      :pointer dst
+      :uint 256
+      :int
+      (foreign-string-to-lisp dst))))
 
 (defun iio-device-attrs (device)
   "Read all device attributes. [EXTRA]"
@@ -275,12 +273,12 @@ libiio function available, but we don't use that."
 (defun iio-device-buffer-attr-read (device attr)
   (with-foreign-object (dst :char 256)
     (foreign-funcall-with-err-handle "iio_device_buffer_attr_read"
-        :pointer device
-        :string attr
-        :pointer dst
-        :uint 256
-        :int
-        (foreign-string-to-lisp dst))))
+      :pointer device
+      :string attr
+      :pointer dst
+      :uint 256
+      :int
+      (foreign-string-to-lisp dst))))
 
 (defun iio-device-buffer-attr-read-all (device)
   "Read the content of all buffer-specific attributes.
@@ -297,10 +295,10 @@ libiio function available, but we don't use that."
   "Retrieve the trigger of a given device."
   (with-foreign-object (trigger :pointer)
     (foreign-funcall-with-err-handle "iio_device_set_trigger"
-        :pointer device
-        :pointer trigger
-        :int
-        (mem-ref trigger :pointer))))
+      :pointer device
+      :pointer trigger
+      :int
+      (mem-ref trigger :pointer))))
 
 (defcfun "iio_device_get_trigger" :int
   "Associate a trigger to a given device."
@@ -364,12 +362,12 @@ libiio function available, but we don't use that."
   "Read the content of the given channel-specific attribute."
   (with-foreign-object (dst :char 256)
     (foreign-funcall-with-err-handle "iio_channel_attr_read"
-        :pointer channel
-        :string attr
-        :pointer dst
-        :uint 256
-        :int
-        (foreign-string-to-lisp dst))))
+      :pointer channel
+      :string attr
+      :pointer dst
+      :uint 256
+      :int
+      (foreign-string-to-lisp dst))))
 
 (defun iio-channel-attrs (channel)
   "Return all channel attributes as strings. [EXTRA]"
@@ -404,23 +402,23 @@ libiio function available, but we don't use that."
   "Demultiplex and convert the samples of a given channel."
   (with-foreign-object (dest :uint32 len)
     (foreign-funcall-with-err-handle "iio_channel_read"
-        :pointer channel
-        :pointer buffer
-        :pointer dest
-        :uint len
-        :int
-        dest)))
+      :pointer channel
+      :pointer buffer
+      :pointer dest
+      :uint len
+      :int
+      (foreign-array-to-lisp dest :uint32))))
 
 ;; Not implemented
 (defun iio-channel-write (channel buffer src len)
   "Convert and multiplex the samples of a given channel"
   (foreign-funcall-with-err-handle "iio_channel_write"
-      :pointer channel
-      :pointer buffer
-      :pointer src
-      :uint32 len
-      :int
-      dest))
+    :pointer channel
+    :pointer buffer
+    :pointer src
+    :uint32 len
+    :int
+    dest))
 
 (defcfun "iio_channel_get_type" :uint
   "Get the type of the given channel."
@@ -476,43 +474,43 @@ libiio function available, but we don't use that."
 
 (defun iio-buffer-get-poll-fd (buffer)
   (foreign-funcall-with-err-handle "iio_buffer_get_poll_fd"
-      :pointer buffer
-      :int
-      ;; Return a valid file descriptor on success.
-      return-code))
+    :pointer buffer
+    :int
+    ;; Return a valid file descriptor on success.
+    return-code))
 
 (defun iio-buffer-set-blocking-mode (buffer blocking)
   (foreign-funcall-with-err-handle "iio_buffer_set_blocking_mode"
-      :pointer buffer
-      :bool blocking
-      :int
-      ;; Returns 0 on success, actually (see libiio doc).
-      return-code))
+    :pointer buffer
+    :bool blocking
+    :int
+    ;; Returns 0 on success, actually (see libiio doc).
+    return-code))
 
 (defun iio-buffer-refill (buffer)
   "Fetch more samples from the hardware."
   (foreign-funcall-with-err-handle "iio_buffer_refill"
-      :pointer buffer
-      :int
-      ;; Return the number of bytes read in case of success.
-      return-code))
+    :pointer buffer
+    :int
+    ;; Return the number of bytes read in case of success.
+    return-code))
 
 (defun iio-buffer-push (buffer)
   "Send the samples to the hardware."
   (foreign-funcall-with-err-handle "iio_buffer_push"
-      :pointer buffer
-      :int
-      ;; Return the number of bytes written in case of success.
-      return-code))
+    :pointer buffer
+    :int
+    ;; Return the number of bytes written in case of success.
+    return-code))
 
 (defun iio-buffer-push-partial (buffer samples-count)
   "Send a given number of samples to the hardware."
   (foreign-funcall-with-err-handle "iio_buffer_push_partial"
-      :pointer buffer
-      :uint samples-count
-      :int
-      ;; Return the number of bytes written in case of success.
-      return-code))
+    :pointer buffer
+    :uint samples-count
+    :int
+    ;; Return the number of bytes written in case of success.
+    return-code))
 
 (defcfun "iio_buffer_cancel" :void
   (buffer :pointer))
@@ -540,10 +538,10 @@ libiio function available, but we don't use that."
 ;; Low-level functions.
 (defun iio-device-get-sample-size (device)
   (foreign-funcall-with-err-handle "iio_device_get_sample_size"
-      :pointer device
-      :int
-      ;; Return the sample size on success.
-      return-code))
+    :pointer device
+    :int
+    ;; Return the sample size on success.
+    return-code))
 
 (defcfun "iio_channel_get_index" :long
   "Get the index of the given channel"
