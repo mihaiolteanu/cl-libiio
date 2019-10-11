@@ -455,6 +455,14 @@ channel."
   "Return the number of enabled channels for the device. [EXTRA]"
   (length (iio-device-enabled-channels device)))
 
+;; TODO: The actual format of the channel samples is not fixed for all
+;; eternity and it differs from device to device (or so I guess). The
+;; details are stored and can be inspected in the struct
+;; iio_data_format. The reading and writing of buffers should depend
+;; on the device sample format so that we can be as generic as
+;; possible. See also the iio_info.c file in the libiio, where the
+;; format is printed as "voltage0: (output, index: 0, format:
+;; le:S16/16>>0), for pluto, for example (when called from the cli)."
 (defun iio-buffer-collect-channel-samples (buffer channel)
   "Return the buffer values for a single channel."
   (let* ((device (iio-buffer-get-device buffer))
