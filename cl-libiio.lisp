@@ -589,10 +589,23 @@ the next two bytes are the second channel sample, and so on."
   "Get the index of the given channel"
   (channel :pointer))
 
-;; TODO: iio_data_format structure not implemented.
-(defcfun "iio_channel_get_data_format" :pointer
+(defcstruct iio-data-format
+  (length          :uint)
+  (bits            :uint)
+  (shift           :uint)
+  (is-signed       :bool)
+  (is-full-defined :bool)
+  (is-be           :bool)
+  (with-scale      :bool)
+  (scale           :double)
+  (repeat          :uint))
+
+(defcfun "iio_channel_get_data_format" (:pointer (:struct iio-data-format))
   "Get a pointer to a channel's data format structure"
   (channel :pointer))
+
+(defun iio-data-format-to-plist (data)
+  (convert-from-foreign data '(:struct iio-data-format)))
 
 ;; TODO: handle null pointer returns. For example,
 ;; (iio-create-context-from-uri "ip:192.168.2.1"), when the device is
