@@ -186,9 +186,9 @@ Otherwise, return the error code together with the error string."
 
 (defun iio-context-get-devices (context)
   "Return all devices for the given context, as strings [EXTRA]."
-  (loop for i from 0 to (1- (iio-context-get-devices-count *context*))
+  (loop for i from 0 to (1- (iio-context-get-devices-count context))
         collect
-        (iio-device-get-name (iio-context-get-device *context* i))))
+        (iio-device-get-name (iio-context-get-device context i))))
 
 ;;; Device functions.
 (defcfun "iio_device_get_context" :pointer
