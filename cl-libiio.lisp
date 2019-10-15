@@ -184,11 +184,16 @@ Otherwise, return the error code together with the error string."
   "Set a timeout for I/O operations."
   (ctx :pointer) (timeout-ms :uint))
 
-(defun iio-context-get-devices (context)
-  "Return all devices for the given context, as strings [EXTRA]."
+(defun iio-context-get-devices-pointers (context)
+  "Return all devices for the given context, as pointers [EXTRA]."
   (loop for i from 0 to (1- (iio-context-get-devices-count context))
         collect
-        (iio-device-get-name (iio-context-get-device context i))))
+        (iio-context-get-device context i)))
+
+(defun iio-context-get-devices-str (context)
+  "Return all devices for the given context, as strings [EXTRA]."
+  (mapcar #'iio-device-get-name
+          (iio-context-get-devices-pointers context)))
 
 ;;; Device functions.
 (defcfun "iio_device_get_context" :pointer
