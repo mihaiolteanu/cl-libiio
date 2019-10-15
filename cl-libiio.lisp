@@ -612,6 +612,40 @@ the next two bytes are the second channel sample, and so on."
 (defun iio-data-format-to-plist (data)
   (convert-from-foreign data '(:struct iio-data-format)))
 
+;; TODO: not sure how to name the extra functions. Should it be
+;; iio-context-info or just context-info. The iio- is used for all
+;; defcfun definitions since that is the name of the foreign
+;; function. iio- was added to some other extra functions since it
+;; keeps the naming consistent.
+(defun context-info (context)
+  "Return a list with all the context devices, channels, attributes.
+In a word, return all the info available for the given context. [EXTRA]"
+  (list :context
+        (list :attrs (iio-context-get-attrs-and-values context))
+        (cons :devices
+              (mapcar #'device-info
+                      (iio-context-get-devices-pointers context)))))
+
+(defun device-info (device)
+  "Return a list with the device attributes and all the channels and
+their attributes. In a word, return all the info available for the
+given device. [EXTRA]"
+  (list (list :device
+              (list :name (iio-device-get-name device))
+              (list :attr (iio-device-attr-read-all device)))
+        (cons :channels
+              (mapcar #'channel-info
+                      (iio-device-get-channels device)))))
+
+(defun channel-info (channel)
+  "Return a list with the channel name and all of its attributes
+together with their values. In a word, return all the info available
+for the given channel. [EXTRA]"
+  (list (list :id
+              (iio-channel-get-id channel))
+        (list :attrs
+              (iio-channel-attr-read-all channel))))
+
 ;; TODO: handle null pointer returns. For example,
 ;; (iio-create-context-from-uri "ip:192.168.2.1"), when the device is
 ;; not connected, a null pointer is returned. Maybe return nil instead.
