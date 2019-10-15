@@ -37,6 +37,9 @@ Use empty string for backend to search all of them."
           :minor (mem-aref minor :uint)
           :git-tag (foreign-string-to-lisp git-tag :count 7))))
 
+(defcvar ("errno" :read-only t) :int
+  "errno.")
+
 (defun iio-strerror (err)
   "Get a string description of the error code."
   (with-foreign-object (dst :char 256)
@@ -107,9 +110,18 @@ Otherwise, return the error code together with the error string."
   `(let ((return-code (foreign-funcall
                        ,name
                        ,@(butlast options-and-success))))
-     (if (iio-success-p return-code)
-         ,(last-elt options-and-success)
-         (values (abs return-code) (iio-strerror (abs return-code))))))
+     (if (pointerp return-code)         ;A pointer is expected
+         (if (null-pointer-p return-code)
+             ;; If a null pointer was returned, an error has occured.
+             (values *errno* (iio-strerror *errno*))
+             ;; Return the pointer, otherwise.
+             return-code)
+         ;; Otherwise the error code is returned diretly by the function
+         (if (iio-success-p return-code) ;No error.
+             ;; Evaluate and return the last form in the body.
+             ,(last-elt options-and-success)
+             (values (abs return-code) (iio-strerror (abs return-code)))))
+     ))
 
 (defun iio-context-get-version (context)
   "Get the version of the backend in use."
