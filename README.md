@@ -8,6 +8,23 @@ More info about libiio is available on Analog Devices' pages, [about
 libiio](https://wiki.analog.com/resources/tools-software/linux-software/libiio_internals)
 and [libiio documentation](http://analogdevicesinc.github.io/libiio/index.html).
 
+# Details
+
+In case of error, some of the libiio functions return the actual
+negative error-code, but others have pointers as return values. In the
+later case, those functions set errno in case of error and return a
+NULL pointer. 
+
+I've taken the liberty to implement `cl-libiio` in a more consistent
+way. In case of error, all functions return NIL together with the error
+code and the error code description as a string. That is,
+
+```common-lisp
+(multiple-value-bind (ret errno err-string)
+    (iio-create-context-from-uri "ip:192.168.2.12")
+  (list ret errno err-string))
+```
+
 # API (exported functions)
 
 Some extra functionality not provided by the libiio is exported and

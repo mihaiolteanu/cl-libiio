@@ -106,10 +106,10 @@ negative error code."
 (defmacro foreign-funcall-with-err-handle (name &body options-and-success)
   "Same as foreign-funcall, but there is an extra form at the end to
 be evaluated. Its value is returned if the foreign call is succesful.
-Otherwise, return the error code together with the error string.
+Otherwise, return nil, together with the  error code and the error string.
 Inside the last form, the calling function can reference
 `return-value' which is bound to the result of calling the foreign
-function NAME."
+function."
   `(let ((return-value (foreign-funcall
                        ,name
                        ,@(butlast options-and-success))))
@@ -118,7 +118,7 @@ function NAME."
          ;; function cal. In this case, errno is set in case of error.
          (if (null-pointer-p return-value)
              ;; If a null pointer was returned, an error has occured.
-             (values *errno* (iio-strerror *errno*))
+             (values nil *errno* (iio-strerror *errno*))
              ;; All good, return the last form of the body.
              ,(last-elt options-and-success))
          ;; Otherwise the error code is returned diretly by the
@@ -128,7 +128,7 @@ function NAME."
              ,(last-elt options-and-success)
              ;; The negative error is returned by the foreign function
              ;; call.
-             (values (abs return-value) (iio-strerror (abs return-value)))))))
+             (values nil (abs return-value) (iio-strerror (abs return-value)))))))
 
 (defun iio-context-get-version (context)
   "Get the version of the backend in use."
