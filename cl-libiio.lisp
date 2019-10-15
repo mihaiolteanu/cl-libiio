@@ -113,16 +113,21 @@ function NAME."
   `(let ((return-value (foreign-funcall
                        ,name
                        ,@(butlast options-and-success))))
-     (if (pointerp return-value)         ;A pointer is expected
+     (if (pointerp return-value)
+         ;; The error code is not returned directly by the foreign
+         ;; function cal. In this case, errno is set in case of error.
          (if (null-pointer-p return-value)
              ;; If a null pointer was returned, an error has occured.
              (values *errno* (iio-strerror *errno*))
-             ;; Return the pointer, otherwise.
-             return-value)
-         ;; Otherwise the error code is returned diretly by the function
-         (if (iio-success-p return-value) ;No error.
+             ;; All good, return the last form of the body.
+             ,(last-elt options-and-success))
+         ;; Otherwise the error code is returned diretly by the
+         ;; foreign function call.
+         (if (iio-success-p return-value)
              ;; Evaluate and return the last form in the body.
              ,(last-elt options-and-success)
+             ;; The negative error is returned by the foreign function
+             ;; call.
              (values (abs return-value) (iio-strerror (abs return-value)))))))
 
 (defun iio-context-get-version (context)
