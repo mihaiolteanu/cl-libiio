@@ -1,10 +1,12 @@
 # Overview
 
-The `cl-libiio` package provides complete Common Lisp API
-implementation for Analog Device's libiio (in short: CL bindings via
-CFFI for libiio)
+The `cl-libiio` package provides complete bindings via CFFI for Analog Devices'
+[libiio v0.18](https://github.com/analogdevicesinc/libiio). `libiio.so.0.18`
+should be present on your system for succesfully using this library.
 
-You can find more info about libiio on their official pages: [about libiio](https://wiki.analog.com/resources/tools-software/linux-software/libiio_internals) and [libiio documentation](http://analogdevicesinc.github.io/libiio/index.html).
+More info about libiio is available on Analog Devices' pages, [about
+libiio](https://wiki.analog.com/resources/tools-software/linux-software/libiio_internals)
+and [libiio documentation](http://analogdevicesinc.github.io/libiio/index.html).
 
 # API (exported functions)
 

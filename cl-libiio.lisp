@@ -159,7 +159,7 @@ Otherwise, return the error code together with the error string."
   "Retrieve the value of a context-specific attribute."
   (ctx :pointer) (name :string))
 
-(defun iio-context-get-attrs-and-values (context)
+(defun iio-context-attrs-and-values (context)
   "Return all the context's attributes and values [EXTRA]."
   (loop for i from 0 to (1- (iio-context-get-attrs-count context))
         collect (iio-context-get-attr context i)))
@@ -311,10 +311,6 @@ libiio function available, but we don't use that."
       :int
       (mem-ref trigger :pointer))))
 
-(defcfun "iio_device_get_trigger" :int
-  "Associate a trigger to a given device."
-  (device :pointer) (trigger :pointer))
-
 (defcfun "iio_device_set_trigger" :int
   (device :pointer) (trigger :pointer))
 
@@ -432,7 +428,7 @@ channel."
     :pointer src
     :uint32 len
     :int
-    dest))
+    return-code))
 
 (defcfun "iio_channel_get_type" :uint
   "Get the type of the given channel."
