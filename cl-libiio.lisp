@@ -166,7 +166,7 @@ Otherwise, return the error code together with the error string."
 
 (defun iio-context-get-attrs (context)
   "Return all the context's attributes, as strings [EXTRA]."
-  (mapcar #'first (iio-context-attrs-and-values context)))
+  (mapcar #'first (iio-context-get-attrs-and-values context)))
 
 (defcfun "iio_context_get_devices_count" :uint
   "Enumerate the devices found in the given context."
