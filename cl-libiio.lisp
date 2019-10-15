@@ -159,7 +159,7 @@ Otherwise, return the error code together with the error string."
   "Retrieve the value of a context-specific attribute."
   (ctx :pointer) (name :string))
 
-(defun iio-context-attrs-and-values (context)
+(defun iio-context-get-attrs-and-values (context)
   "Return all the context's attributes and values [EXTRA]."
   (loop for i from 0 to (1- (iio-context-get-attrs-count context))
         collect (iio-context-get-attr context i)))
