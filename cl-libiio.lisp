@@ -97,31 +97,33 @@ Use empty string for backend to search all of them."
   "Destroy the given context."
   (ctx :pointer))
 
-(defun iio-success-p (return-code)
-  "Return t if return-code is non-negative [EXTRA].  
+(defun iio-success-p (return-value)
+  "Return t if return-value is non-negative [EXTRA].  
 Useful for libiio functions which signal an error by returning a
 negative error code."
-  (>= return-code 0))
+  (>= return-value 0))
 
 (defmacro foreign-funcall-with-err-handle (name &body options-and-success)
   "Same as foreign-funcall, but there is an extra form at the end to
 be evaluated. Its value is returned if the foreign call is succesful.
-Otherwise, return the error code together with the error string."
-  `(let ((return-code (foreign-funcall
+Otherwise, return the error code together with the error string.
+Inside the last form, the calling function can reference
+`return-value' which is bound to the result of calling the foreign
+function NAME."
+  `(let ((return-value (foreign-funcall
                        ,name
                        ,@(butlast options-and-success))))
-     (if (pointerp return-code)         ;A pointer is expected
-         (if (null-pointer-p return-code)
+     (if (pointerp return-value)         ;A pointer is expected
+         (if (null-pointer-p return-value)
              ;; If a null pointer was returned, an error has occured.
              (values *errno* (iio-strerror *errno*))
              ;; Return the pointer, otherwise.
-             return-code)
+             return-value)
          ;; Otherwise the error code is returned diretly by the function
-         (if (iio-success-p return-code) ;No error.
+         (if (iio-success-p return-value) ;No error.
              ;; Evaluate and return the last form in the body.
              ,(last-elt options-and-success)
-             (values (abs return-code) (iio-strerror (abs return-code)))))
-     ))
+             (values (abs return-value) (iio-strerror (abs return-value)))))))
 
 (defun iio-context-get-version (context)
   "Get the version of the backend in use."
@@ -311,7 +313,7 @@ libiio function available, but we don't use that."
     :string value
     :int
     ;; Return the number of bytes written on success.
-    return-code))
+    return-value))
 
 ;; Trigger functions not tested.
 (defun iio-device-get-trigger (device)
@@ -440,7 +442,7 @@ channel."
     :pointer src
     :uint32 len
     :int
-    return-code))
+    return-value))
 
 (defcfun "iio_channel_get_type" :uint
   "Get the type of the given channel."
@@ -523,7 +525,7 @@ and the second element is the samples read from the buffer."
     :pointer buffer
     :int
     ;; Return a valid file descriptor on success.
-    return-code))
+    return-value))
 
 (defun iio-buffer-set-blocking-mode (buffer blocking)
   (foreign-funcall-with-err-handle "iio_buffer_set_blocking_mode"
@@ -531,7 +533,7 @@ and the second element is the samples read from the buffer."
     :bool blocking
     :int
     ;; Returns 0 on success, actually (see libiio doc).
-    return-code))
+    return-value))
 
 (defun iio-buffer-refill (buffer)
   "Fetch more samples from the hardware."
@@ -539,7 +541,7 @@ and the second element is the samples read from the buffer."
     :pointer buffer
     :int
     ;; Return the number of bytes read in case of success.
-    return-code))
+    return-value))
 
 (defun iio-buffer-push (buffer)
   "Send the samples to the hardware."
@@ -547,7 +549,7 @@ and the second element is the samples read from the buffer."
     :pointer buffer
     :int
     ;; Return the number of bytes written in case of success.
-    return-code))
+    return-value))
 
 (defun iio-buffer-push-partial (buffer samples-count)
   "Send a given number of samples to the hardware."
@@ -556,7 +558,7 @@ and the second element is the samples read from the buffer."
     :uint samples-count
     :int
     ;; Return the number of bytes written in case of success.
-    return-code))
+    return-value))
 
 (defcfun "iio_buffer_cancel" :void
   (buffer :pointer))
@@ -596,7 +598,7 @@ the next two bytes are the second channel sample, and so on."
     :pointer device
     :int
     ;; Return the sample size on success.
-    return-code))
+    return-value))
 
 (defcfun "iio_channel_get_index" :long
   "Get the index of the given channel"
