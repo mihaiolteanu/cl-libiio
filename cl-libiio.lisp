@@ -106,29 +106,24 @@ negative error code."
 (defmacro foreign-funcall-with-err-handle (name &body options-and-success)
   "Same as foreign-funcall, but there is an extra form at the end to
 be evaluated. Its value is returned if the foreign call is succesful.
-Otherwise, return nil, together with the  error code and the error string.
-Inside the last form, the calling function can reference
+Otherwise, return nil, together with the error code and the error
+string.  Inside the last form, the calling function can reference
 `return-value' which is bound to the result of calling the foreign
 function."
   `(let ((return-value (foreign-funcall
-                       ,name
-                       ,@(butlast options-and-success))))
-     (if (pointerp return-value)
-         ;; The error code is not returned directly by the foreign
-         ;; function cal. In this case, errno is set in case of error.
-         (if (null-pointer-p return-value)
-             ;; If a null pointer was returned, an error has occured.
-             (values nil *errno* (iio-strerror *errno*))
-             ;; All good, return the last form of the body.
-             ,(last-elt options-and-success))
-         ;; Otherwise the error code is returned diretly by the
-         ;; foreign function call.
-         (if (iio-success-p return-value)
-             ;; Evaluate and return the last form in the body.
-             ,(last-elt options-and-success)
-             ;; The negative error is returned by the foreign function
-             ;; call.
-             (values nil (abs return-value) (iio-strerror (abs return-value)))))))
+                        ,name
+                        ,@(butlast options-and-success))))
+     ;; Some libiio functions return the error code directly as a
+     ;; negative value, others return pointers and set the errno if
+     ;; needed. If a pointer is expected but it's null or the return
+     ;; code is actually an error code, return NIL. Otherwise, return
+     ;; the last form of the calling function.
+     (if (or (and (pointerp return-value)
+                  (null-pointer-p return-value))
+             (and (not (pointerp return-value))
+                  (not (iio-success-p return-value))))
+         (values nil *errno* (iio-strerror *errno*))
+         ,(last-elt options-and-success))))
 
 (defun iio-context-get-version (context)
   "Get the version of the backend in use."
@@ -660,7 +655,3 @@ for the given channel. [EXTRA]"
               (iio-channel-get-id channel))
         (list :attrs
               (iio-channel-attr-read-all channel))))
-
-;; TODO: handle null pointer returns. For example,
-;; (iio-create-context-from-uri "ip:192.168.2.1"), when the device is
-;; not connected, a null pointer is returned. Maybe return nil instead.
