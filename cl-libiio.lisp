@@ -2,7 +2,8 @@
 (in-package :cl-libiio)
 
 (define-foreign-library libiio
-  (:unix "/usr/lib/libiio.so.0.18")
+  (:unix "libiio.so")
+  (:windows "libiio.dll")
   (t (:default "libiio")))
 (use-foreign-library libiio)
 
