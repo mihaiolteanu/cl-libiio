@@ -104,27 +104,30 @@ Useful for libiio functions which signal an error by returning a
 negative error code."
   (>= return-value 0))
 
-(defmacro foreign-funcall-with-err-handle (name &body options-and-success)
+(defmacro foreign-funcall-with-err-handle (name &body args)
   "Same as foreign-funcall, but there is an extra form at the end to
 be evaluated. Its value is returned if the foreign call is succesful.
 Otherwise, return nil, together with the error code and the error
 string.  Inside the last form, the calling function can reference
 `return-value' which is bound to the result of calling the foreign
 function."
-  `(let ((return-value (foreign-funcall
-                        ,name
-                        ,@(butlast options-and-success))))
-     ;; Some libiio functions return the error code directly as a
-     ;; negative value, others return pointers and set the errno if
-     ;; needed. If a pointer is expected but it's null or the return
-     ;; code is actually an error code, return NIL. Otherwise, return
-     ;; the last form of the calling function.
-     (if (or (and (pointerp return-value)
-                  (null-pointer-p return-value))
-             (and (not (pointerp return-value))
-                  (not (iio-success-p return-value))))
-         (values nil *errno* (iio-strerror *errno*))
-         ,(last-elt options-and-success))))
+  (let ((return-type (last-elt (butlast args)))
+        (return-value (last-elt args)))
+    `(let ((return-value (foreign-funcall
+                          ,name
+                          ,@(butlast args))))
+       ;; Some libiio functions return the error code directly as a
+       ;; negative value, others return pointers and set the errno if
+       ;; needed. If a pointer is expected but it's null or the return
+       ;; code is actually an error code, return NIL. Otherwise, return
+       ;; the last form of the calling function.
+       ,(if (eql return-type :pointer)
+            `(if (null-pointer-p return-value)
+                 (values nil *errno* (iio-strerror *errno*))
+                 ,return-value)
+            `(if (not (iio-success-p return-value))
+                 (values nil *errno* (iio-strerror *errno*))
+                 ,return-value)))))
 
 (defun iio-context-get-version (context)
   "Get the version of the backend in use."
